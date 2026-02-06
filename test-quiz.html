@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sample Quiz - Moodle Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f4f4f4;
+      line-height: 1.6;
+    }
+
+    /* Moodle-like header */
+    .navbar {
+      background: #1d2125;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .navbar .logo {
+      color: #ff7c00;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .navbar .breadcrumb {
+      color: #fff;
+      font-size: 14px;
+    }
+
+    .navbar .breadcrumb a {
+      color: #8ab4f8;
+      text-decoration: none;
+    }
+
+    /* Main content area */
+    .main-content {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+
+    .quiz-header {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .quiz-header h1 {
+      color: #1d2125;
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    .quiz-info {
+      display: flex;
+      gap: 20px;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .quiz-info span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Question styling - Moodle format */
+    .que {
+      background: #fff;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .que .info {
+      background: #f8f9fa;
+      padding: 12px 20px;
+      border-bottom: 1px solid #dee2e6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .que .info .no {
+      font-weight: bold;
+      color: #495057;
+    }
+
+    .que .info .grade {
+      color: #6c757d;
+      font-size: 13px;
+    }
+
+    .que .content {
+      padding: 20px;
+    }
+
+    .que .formulation {
+      margin-bottom: 15px;
+    }
+
+    .que .qtext {
+      font-size: 16px;
+      color: #212529;
+      margin-bottom: 20px;
+      line-height: 1.7;
+    }
+
+    .que .answer {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .que .answer .r0,
+    .que .answer .r1 {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 15px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .que .answer .r0:hover,
+    .que .answer .r1:hover {
+      background: #e9ecef;
+    }
+
+    .que .answer input[type="radio"] {
+      margin-top: 3px;
+      cursor: pointer;
+    }
+
+    .que .answer label {
+      cursor: pointer;
+      flex: 1;
+    }
+
+    .que .answer .answernumber {
+      font-weight: bold;
+      color: #495057;
+      min-width: 25px;
+    }
+
+    .que .answer .flex-fill {
+      color: #212529;
+    }
+
+    /* Multiple answer (checkbox) */
+    .que .answer input[type="checkbox"] {
+      margin-top: 3px;
+      cursor: pointer;
+    }
+
+    /* Submit button */
+    .quiz-nav {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 10px 25px;
+      border: none;
+      border-radius: 5px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary {
+      background: #0f6cbf;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #0a5a9e;
+    }
+
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+
+    .timer {
+      background: #fff3cd;
+      color: #856404;
+      padding: 8px 15px;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    /* Question types indicator */
+    .que.multichoice .info::before {
+      content: "Multiple choice";
+      font-size: 11px;
+      background: #d4edda;
+      color: #155724;
+      padding: 2px 8px;
+      border-radius: 3px;
+      margin-right: 10px;
+    }
+
+    /* Code block styling */
+    code {
+      background: #f4f4f4;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 14px;
+    }
+
+    pre {
+      background: #282c34;
+      color: #abb2bf;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Moodle-like navbar -->
+  <nav class="navbar">
+    <div class="logo">M</div>
+    <div class="breadcrumb">
+      <a href="#">Dashboard</a> / <a href="#">Computer Science 101</a> / <a href="#">Quizzes</a> / Midterm Exam
+    </div>
+  </nav>
+
+  <div class="main-content">
+    <!-- Quiz header -->
+    <div class="quiz-header">
+      <h1>Midterm Examination - Computer Science Fundamentals</h1>
+      <div class="quiz-info">
+        <span>📅 Due: December 15, 2024</span>
+        <span>⏱️ Time limit: 60 minutes</span>
+        <span>📝 10 Questions</span>
+      </div>
+    </div>
+
+    <!-- Timer -->
+    <div class="timer" style="margin-bottom: 20px; text-align: center;">
+      ⏱️ Time remaining: 45:32
+    </div>
+
+    <!-- Question 1 -->
+    <div class="que multichoice" id="question-1">
+      <div class="info">
+        <span class="no">Question 1</span>
+        <span class="grade">1 mark</span>
+      </div>
+      <div class="content">
+        <div class="formulation">
+          <div class="qtext">
+            What is the time complexity of binary search algorithm?
+          </div>
+          <div class="answer">
+            <div class="r0">
+              <input type="radio" name="q1" id="q1a" value="a">
+              <span class="answernumber">a.</span>
+              <label class="flex-fill" for="q1a">O(n)</label>
+            </div>
+            <div class="r1">
+              <input type="radio" name="q1" id="q1b" value="b">
+              <span class="answernumber">b.</span>
+              <label class="flex-fill" for="q1b">O(log n)</label>
+            </div>
+            <div class="r0">
+              <input type="radio" name="q1" id="q1c" value="c">
+              <span class="answernumber">c.</span>
+              <label class="flex-fill" for="q1c">O(n²)</label>
+            </div>
+            <div class="r1">
+              <input type="radio" name="q1" id="q1d" value="d">
+              <span class="answernumber">d.</span>
+              <label class="flex-fill" for="q1d">O(1)</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="que multichoice" id="question-2">
+      <div class="info">
+        <span class="no">Question 2</span>
+        <span class="grade">1 mark</span>
+      </div>
+      <div class="content">
+        <div class="formulation">
+          <div class="qtext">
+            Which data structure operates on a Last-In-First-Out (LIFO) principle?
+          </div>
+          <div class="answer">
+            <div class="r0">
+              <input type="radio" name="q2" id="q2a" value="a">
+              <span class="answernumber">a.</span>
+              <label class="flex-fill" for="q2a">Queue</label>
+            </div>
+            <div class="r1">
+              <input type="radio" name="q2" id="q2b" value="b">
+              <span class="answernumber">b.</span>
+              <label class="flex-fill" for="q2b">Stack</label>
+            </div>
+            <div class="r0">
+              <input type="radio" name="q2" id="q2c" value="c">
+              <span class="answernumber">c.</span>
+              <label class="flex-fill" for="q2c">Linked List</label>
+            </div>
+            <div class="r1">
+              <input type="radio" name="q2" id="q2d" value="d">
+              <span class="answernumber">d.</span>
+              <label class="flex-fill" for="q2d">Array</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="que multichoice" id="question-3">
+      <div class="info">
+        <span class="no">Question 3</span>
+        <span class="grade">1 mark</span>
+      </div>
+      <div class="content">
+        <div class="formulation">
+          <div class="qtext">
+            In Python, what is the output of the following code?
+            <pre>x = [1, 2, 3]
+y = x
+y.append(4)
+print(len(x))</pre>
+          </div>
+          <div class="answer">
+            <div class="r0">
+              <input type="radio" name="q3" id="q3a" value="a">
+              <span class="answernumber">a.</span>
+              <label class="flex-fill" for="q3a">3</label>
+            </div>
+            <div class="r1">
+              <input type="radio" name="q3" id="q3b" value="b">
+              <span class="answernumber">b.</span>
+              <label class="flex-fill" for="q3b">4</label>
+            </div>
+            <div class="r0">
+              <input type="radio" name="q3" id="q3c" value="c">
+              <span class="answernumber">c.</span>
+              <label class="flex-fill" for="q3c">Error</label>
+            </div>
+            <div class="r1">
+              <input type="radio" name="q3" id="q3d" value="d">
+              <span class="answernumber">d.</span>
+              <label class="flex-fill" for="q3d">None</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="que multichoice" id="question-4">
+      <div class="info">
+        <span class="no">Question 4</span>
+        <span class="grade">1 mark</span>
+      </div>
+      <div class="content">
+        <div class="formulation">
+          <div class="qtext">
+            What does SQL stand for?
+          </div>
+          <div class="answer">
+            <div class="r0">
+              <input type="radio" name="q4" id="q4a" value="a">
+              <span class="answernumber">a.</span>
+              <label class="flex-fill" for="q4a">Simple Query Language</label>
+            </div>
+            <div class="r1">
+              <input type="radio" name="q4" id="q4b" value="b">
+              <span class="answernumber">b.</span>
+              <label class="flex-fill" for="q4b">Structured Query Language</label>
+            </div>
+            <div class="r0">
+              <input type="radio" name="q4" id="q4c" value="c">
+              <span class="answernumber">c.</span>
+              <label class="flex-fill" for="q4c">Standard Query Logic</label>
+            </div>
+            <div class="r1">
+              <input type="radio" name="q4" id="q4d" value="d">
+              <span class="answernumber">d.</span>
+              <label class="flex-fill" for="q4d">System Query Language</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Question 5 -->
+    <div class="que multichoice" id="question-5">
+      <div class="info">
+        <span class="no">Question 5</span>
+        <span class="grade">1 mark</span>
+      </div>
+      <div class="content">
+        <div class="formulation">
+          <div class="qtext">
+            Which of the following is NOT a valid HTTP status code category?
+          </div>
+          <div class="answer">
+            <div class="r0">
+              <input type="radio" name="q5" id="q5a" value="a">
+              <span class="answernumber">a.</span>
+              <label class="flex-fill" for="q5a">1xx - Informational</label>
+            </div>
+            <div class="r1">
+              <input type="radio" name="q5" id="q5b" value="b">
+              <span class="answernumber">b.</span>
+              <label class="flex-fill" for="q5b">2xx - Success</label>
+            </div>
+            <div class="r0">
+              <input type="radio" name="q5" id="q5c" value="c">
+              <span class="answernumber">c.</span>
+              <label class="flex-fill" for="q5c">6xx - Server Overload</label>
+            </div>
+            <div class="r1">
+              <input type="radio" name="q5" id="q5d" value="d">
+              <span class="answernumber">d.</span>
+              <label class="flex-fill" for="q5d">4xx - Client Error</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Question 6 -->
+    <div class="que multichoice" id="question-6">
+      <div class="info">
+        <span class="no">Question 6</span>
+        <span class="grade">1 mark</span>
+      </div>
+      <div class="content">
+        <div class="formulation">
+          <div class="qtext">
+            What is the primary purpose of an API (Application Programming Interface)?
+          </div>
+          <div class="answer">
+            <div class="r0">
+              <input type="radio" name="q6" id="q6a" value="a">
+              <span class="answernumber">a.</span>
+              <label class="flex-fill" for="q6a">To store data in a database</label>
+            </div>
+            <div class="r1">
+              <input type="radio" name="q6" id="q6b" value="b">
+              <span class="answernumber">b.</span>
+              <label class="flex-fill" for="q6b">To allow different software applications to communicate with each other</label>
+            </div>
+            <div class="r0">
+              <input type="radio" name="q6" id="q6c" value="c">
+              <span class="answernumber">c.</span>
+              <label class="flex-fill" for="q6c">To compile source code into machine code</label>
+            </div>
+            <div class="r1">
+              <input type="radio" name="q6" id="q6d" value="d">
+              <span class="answernumber">d.</span>
+              <label class="flex-fill" for="q6d">To encrypt network traffic</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Question 7 -->
+    <div class="que multichoice" id="question-7">
+      <div class="info">
+        <span class="no">Question 7</span>
+        <span class="grade">1 mark</span>
+      </div>
+      <div class="content">
+        <div class="formulation">
+          <div class="qtext">
+            In object-oriented programming, what is encapsulation?
+          </div>
+          <div class="answer">
+            <div class="r0">
+              <input type="radio" name="q7" id="q7a" value="a">
+              <span class="answernumber">a.</span>
+              <label class="flex-fill" for="q7a">The ability of a class to inherit properties from another class</label>
+            </div>
+            <div class="r1">
+              <input type="radio" name="q7" id="q7b" value="b">
+              <span class="answernumber">b.</span>
+              <label class="flex-fill" for="q7b">The bundling of data and methods that operate on that data within a single unit</label>
+            </div>
+            <div class="r0">
+              <input type="radio" name="q7" id="q7c" value="c">
+              <span class="answernumber">c.</span>
+              <label class="flex-fill" for="q7c">The ability to process objects differently based on their type</label>
+            </div>
+            <div class="r1">
+              <input type="radio" name="q7" id="q7d" value="d">
+              <span class="answernumber">d.</span>
+              <label class="flex-fill" for="q7d">The process of converting code into bytecode</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Question 8 -->
+    <div class="que multichoice" id="question-8">
+      <div class="info">
+        <span class="no">Question 8</span>
+        <span class="grade">1 mark</span>
+      </div>
+      <div class="content">
+        <div class="formulation">
+          <div class="qtext">
+            What is the capital of France?
+          </div>
+          <div class="answer">
+            <div class="r0">
+              <input type="radio" name="q8" id="q8a" value="a">
+              <span class="answernumber">a.</span>
+              <label class="flex-fill" for="q8a">London</label>
+            </div>
+            <div class="r1">
+              <input type="radio" name="q8" id="q8b" value="b">
+              <span class="answernumber">b.</span>
+              <label class="flex-fill" for="q8b">Berlin</label>
+            </div>
+            <div class="r0">
+              <input type="radio" name="q8" id="q8c" value="c">
+              <span class="answernumber">c.</span>
+              <label class="flex-fill" for="q8c">Paris</label>
+            </div>
+            <div class="r1">
+              <input type="radio" name="q8" id="q8d" value="d">
+              <span class="answernumber">d.</span>
+              <label class="flex-fill" for="q8d">Madrid</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="quiz-nav">
+      <button class="btn btn-secondary">Previous page</button>
+      <span style="color: #666;">Page 1 of 1</span>
+      <button class="btn btn-primary">Submit quiz</button>
+    </div>
+
+  </div>
+
+</body>
+</html>

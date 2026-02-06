@@ -1,0 +1,62 @@
+/* Moodle AI Demo - Compact Styles */
+
+#moodle-ai-demo-btn {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 999999;
+  padding: 8px 14px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: sans-serif;
+}
+
+#moodle-ai-demo-btn:hover {
+  background: #764ba2;
+}
+
+#moodle-ai-demo-panel {
+  position: fixed;
+  bottom: 60px;
+  left: 20px;
+  background: #222;
+  border-radius: 8px;
+  z-index: 1000000;
+  font-family: sans-serif;
+  display: none;
+  padding: 8px 12px;
+  min-width: 100px;
+}
+
+#moodle-ai-demo-panel.mai-visible {
+  display: block;
+}
+
+.mai-header {
+  display: none;
+}
+
+.mai-content {
+  color: #48bb78;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.mai-loading {
+  color: #aaa;
+  font-size: 12px;
+}
+
+.mai-error {
+  color: #ff6b6b;
+  font-size: 11px;
+}
+
+.mai-close {
+  display: none;
+}
