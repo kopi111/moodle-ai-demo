@@ -1,0 +1,7 @@
+2026-11-06 — Page assistant
+[x] assistant.js: "💬 Ask" button + panel with text box (Ctrl+Enter sends), page text as context
+[x] Detect "write/make/create ... code/program/function" on the page, offer help (Yes/No), prefill box
+[x] background.js: streaming /api/chat over a port, 5 min timeout
+[x] Render code blocks with Copy button (textContent only, no innerHTML from the model)
+[x] manifest: add assistant.js / assistant.css
+[x] Test on test-quiz.html + a page that says "write a program"

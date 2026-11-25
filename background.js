@@ -2,7 +2,7 @@
 // For academic integrity research demonstration only
 
 const OLLAMA_URL = 'http://localhost:11434/api/generate';
-const DEFAULT_MODEL = 'llama3.2';
+const DEFAULT_MODEL = 'llama3.2:3b';
 
 // Listen for messages from content script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -165,4 +165,107 @@ function parseAIResponse(response, question) {
   }
 
   return result;
+}
+
+// ---------- Page Assistant ----------
+// The content script opens a port named "page-assistant" and sends one request:
+// { instruction, pageText, pageTitle, pageUrl }. We stream Ollama's reply back
+// as { chunk } messages, then { done } or { error }.
+
+const OLLAMA_CHAT_URL = 'http://localhost:11434/api/chat';
+const ASSISTANT_TIMEOUT_MS = 5 * 60 * 1000;
+const ASSISTANT_SYSTEM_PROMPT =
+  'You are a helpful coding and study assistant running inside the user\'s web browser. ' +
+  'The user may give you the text of the page they are viewing as context. ' +
+  'Follow the user\'s instruction. When you write code, give complete, runnable code in one ' +
+  'fenced code block with the language name, add short plain-English comments, then a brief explanation.';
+
+// Accept a connection from the page and answer its request
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name !== 'page-assistant') return;
+  port.onMessage.addListener((request) => streamAssistantReply(port, request));
+});
+
+// Ask Ollama and pass each piece of the reply to the page as it arrives
+async function streamAssistantReply(port, request) {
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), ASSISTANT_TIMEOUT_MS);
+  port.onDisconnect.addListener(() => abort.abort());
+  try {
+    const model = await readSelectedModel();
+    const response = await fetch(OLLAMA_CHAT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, stream: true, messages: buildAssistantMessages(request), options: { temperature: 0.3 } }),
+      signal: abort.signal
+    });
+    if (!response.ok) throw new Error(await describeOllamaError(response, model));
+    await forwardStream(response.body, port);
+    safePost(port, { done: true });
+  } catch (error) {
+    safePost(port, { error: friendlyAssistantError(error) });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// The model chosen in the popup, or the default
+async function readSelectedModel() {
+  const storage = await chrome.storage.local.get(['selectedModel']);
+  return storage.selectedModel || DEFAULT_MODEL;
+}
+
+// System prompt + the user's instruction, with the page text attached when given
+function buildAssistantMessages({ instruction, pageText, pageTitle, pageUrl }) {
+  const context = pageText
+    ? `Page: ${pageTitle}\nURL: ${pageUrl}\n\n--- PAGE TEXT ---\n${pageText}\n--- END PAGE TEXT ---\n\n`
+    : '';
+  return [
+    { role: 'system', content: ASSISTANT_SYSTEM_PROMPT },
+    { role: 'user', content: context + 'Instruction: ' + instruction }
+  ];
+}
+
+// Ollama sends one JSON object per line; pass on each message's text
+async function forwardStream(body, port) {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffered = '';
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffered += decoder.decode(value, { stream: true });
+    const lines = buffered.split('\n');
+    buffered = lines.pop();
+    lines.filter((line) => line.trim()).forEach((line) => forwardLine(line, port));
+  }
+  if (buffered.trim()) forwardLine(buffered, port);
+}
+
+// Send the text inside one streamed line to the page
+function forwardLine(line, port) {
+  const data = JSON.parse(line);
+  if (data.error) throw new Error(data.error);
+  const text = data.message?.content;
+  if (text) safePost(port, { chunk: text });
+}
+
+// Turn an Ollama HTTP error into a short message
+async function describeOllamaError(response, model) {
+  if (response.status === 403) return 'Ollama refused the add-on (403). OLLAMA_ORIGINS must allow chrome-extension://*.';
+  if (response.status === 404) return `Model "${model}" is not installed in Ollama. Pick another in the add-on popup.`;
+  return `Ollama error ${response.status}: ${(await response.text()).slice(0, 200)}`;
+}
+
+// Short on-screen error; full detail goes to the service worker console
+function friendlyAssistantError(error) {
+  console.error('Page Assistant:', error);
+  if (error.name === 'AbortError') return 'Timed out or cancelled.';
+  if (String(error.message).includes('Failed to fetch')) return 'Cannot reach Ollama. Is it running?';
+  return error.message;
+}
+
+// Posting to a page that was closed throws; ignore that
+function safePost(port, message) {
+  try { port.postMessage(message); } catch (_) { /* page closed */ }
 }

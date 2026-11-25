@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Moodle AI Demo - Academic Integrity Research",
-  "version": "2.0",
+  "version": "2.1",
   "description": "Demonstration tool for academic integrity research - shows AI cheating vulnerabilities",
   "permissions": [
     "activeTab",
@@ -19,9 +19,17 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "css": ["content.css"]
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js",
+        "assistant.js"
+      ],
+      "css": [
+        "content.css",
+        "assistant.css"
+      ]
     }
   ],
   "background": {
